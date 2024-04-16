@@ -30,6 +30,7 @@ class SimMIM(nn.Module):
         self.to_pixels = nn.Linear(encoder_dim, pixel_values_per_patch)
 
     def forward(self, img):
+        breakpoint()
         device = img.device
 
         # get patches
@@ -53,13 +54,15 @@ class SimMIM(nn.Module):
         # prepare mask tokens
 
         mask_tokens = repeat(self.mask_token, 'd -> b n d', b = batch, n = num_patches)
-        mask_tokens = mask_tokens + pos_emb
+        mask_tokens = mask_tokens + pos_emb     # (8,64,1024)
 
         # calculate of patches needed to be masked, and get positions (indices) to be masked
 
-        num_masked = int(self.masking_ratio * num_patches)
-        masked_indices = torch.rand(batch, num_patches, device = device).topk(k = num_masked, dim = -1).indices
-        masked_bool_mask = torch.zeros((batch, num_patches), device = device).scatter_(-1, masked_indices, 1).bool()
+        num_masked = int(self.masking_ratio * num_patches)  # number of patches to be masked
+        
+        # 우리는 patch level에서 masking을 수행. 따라서 각 batch별로 patch64개 중에서 어디 32개의 patch를 masking할지 index를 무작위로 저장
+        masked_indices = torch.rand(batch, num_patches, device = device).topk(k = num_masked, dim = -1).indices     
+        masked_bool_mask = torch.zeros((batch, num_patches), device = device).scatter_(dim=-1, index=masked_indices, value=1).bool()
 
         # mask tokens
 

@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from einops import repeat
 
 from vit_pytorch.vit import Transformer
+from vit_pytorch.vit import ViT
 
 class MAE(nn.Module):
     def __init__(
@@ -39,6 +40,7 @@ class MAE(nn.Module):
         self.to_pixels = nn.Linear(decoder_dim, pixel_values_per_patch)
 
     def forward(self, img):
+        breakpoint()
         device = img.device
 
         # get patches
@@ -63,15 +65,15 @@ class MAE(nn.Module):
         # get the unmasked tokens to be encoded
 
         batch_range = torch.arange(batch, device = device)[:, None]
-        tokens = tokens[batch_range, unmasked_indices]
+        tokens = tokens[batch_range, unmasked_indices]      # tokens 는 20개의 unmsked tokens로 구성 O
 
         # get the patches to be masked for the final reconstruction loss
 
-        masked_patches = patches[batch_range, masked_indices]
+        masked_patches = patches[batch_range, masked_indices]   # patches에서 mask 될 부분을 모아놓아 O 
 
         # attend with vision transformer
 
-        encoded_tokens = self.encoder.transformer(tokens)
+        encoded_tokens = self.encoder.transformer(tokens)   # tokens를 넣네. 즉 mask되지 않은 token들을 넣어 O
 
         # project encoder to decoder dimensions, if they are not equal - the paper says you can get away with a smaller dimension for decoder
 
@@ -102,3 +104,14 @@ class MAE(nn.Module):
 
         recon_loss = F.mse_loss(pred_pixel_values, masked_patches)
         return recon_loss
+
+
+vit = ViT(image_size=224, patch_size=16, num_classes=1000, dim=256, depth=1, heads=8, mlp_dim=1024, pool = 'cls', channels = 3, dim_head = 64, dropout = 0., emb_dropout = 0.)
+mae_model = MAE(encoder=vit, decoder_dim=768, masking_ratio=0.9, decoder_depth=1, decoder_heads=8, decoder_dim_head=64)
+
+t1 = torch.rand(8,3,224,224)
+
+out = mae_model(t1)
+
+
+breakpoint()

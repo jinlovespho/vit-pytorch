@@ -94,7 +94,7 @@ class Transformer(nn.Module):
 class ProjectInOut(nn.Module):
     def __init__(self, dim_in, dim_out, fn):
         super().__init__()
-        self.fn = fn
+        self.fn = fn    # cross attention layer 
 
         need_projection = dim_in != dim_out
         self.project_in = nn.Linear(dim_in, dim_out) if need_projection else nn.Identity()
@@ -102,7 +102,7 @@ class ProjectInOut(nn.Module):
 
     def forward(self, x, *args, **kwargs):
         x = self.project_in(x)
-        x = self.fn(x, *args, **kwargs)
+        x = self.fn(x, *args, **kwargs)     # cross attn layer 
         x = self.project_out(x)
         return x
 
@@ -119,6 +119,7 @@ class CrossTransformer(nn.Module):
             ]))
 
     def forward(self, sm_tokens, lg_tokens):
+        breakpoint()
         (sm_cls, sm_patch_tokens), (lg_cls, lg_patch_tokens) = map(lambda t: (t[:, :1], t[:, 1:]), (sm_tokens, lg_tokens))
 
         for sm_attend_lg, lg_attend_sm in self.layers:
@@ -255,6 +256,7 @@ class CrossViT(nn.Module):
         self.lg_mlp_head = nn.Sequential(nn.LayerNorm(lg_dim), nn.Linear(lg_dim, num_classes))
 
     def forward(self, img):
+        breakpoint()
         sm_tokens = self.sm_image_embedder(img)
         lg_tokens = self.lg_image_embedder(img)
 
@@ -266,3 +268,12 @@ class CrossViT(nn.Module):
         lg_logits = self.lg_mlp_head(lg_cls)
 
         return sm_logits + lg_logits
+
+
+        
+t1=torch.randn(1,3,384,384)
+model = CrossViT(image_size=384,num_classes=1000, sm_dim=384, lg_dim=768)
+
+o1=model(t1)
+
+breakpoint()
